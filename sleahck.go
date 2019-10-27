@@ -15,6 +15,15 @@ import (
 
 
 // Data Struct --- {{{
+
+type Channels struct {
+  Ok bool `json:"ok"`
+  Channels []struct {
+    Id string `json:"id"`
+    Name string `json:"name"`
+  } `json:"channels"`
+}
+
 type UsersList struct {
   Ok bool `json:"ok"`
   Members []struct {
@@ -50,6 +59,43 @@ type Messages struct {
 // }}}
 
 func main() {
+}
+
+func getChannels() *Channels {
+  var channels Channels
+
+  reqURL := "https://slack.com/api/users.conversations"
+
+  req, err := http.NewRequest("GET", reqURL, nil)
+  if err != nil {
+    log.Println("error")
+  }
+
+  req.Header.Add("Authorization", "Bearer " + os.Getenv("SLACK_TOKEN"))
+  req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+
+  client := &http.Client{}
+  resp, err := client.Do(req)
+  defer resp.Body.Close()
+  if err != nil {
+    log.Println("error")
+  }
+
+  body, err := ioutil.ReadAll(resp.Body)
+  if err != nil {
+    log.Println("error")
+  }
+
+  err = json.Unmarshal(body, &channels)
+  if err != nil {
+    log.Println("error")
+  }
+
+  for _, e := range channels.Channels {
+    fmt.Println(e)
+  }
+
+  return &channels
 }
 
 func getUserData() *Users {
