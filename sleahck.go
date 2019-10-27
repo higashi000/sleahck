@@ -13,6 +13,8 @@ import (
 //    "reflect"
     )
 
+
+// Data Struct --- {{{
 type UsersList struct {
   Ok bool `json:"ok"`
   Members []struct {
@@ -45,6 +47,8 @@ type Messages struct {
   Msg [50]Message `json:"msg"`
 }
 
+// }}}
+
 func main() {
 }
 
@@ -76,7 +80,7 @@ func getUserData() *Users {
   return &users
 }
 
-func getHistory(channelID string) *Messages {
+func getHistory(channelID string, userData Users) *Messages {
   var messages Messages
   api := slack.New(os.Getenv("SLACK_TOKEN"))
 
@@ -88,7 +92,16 @@ func getHistory(channelID string) *Messages {
 
   for i := 49; i >= 0; i-- {
     messages.Msg[i].Text = slackLog.Messages[i].Msg.Text
-    messages.Msg[i].User = slackLog.Messages[i].Msg.User
+
+    for _, e := range userData.UserData {
+      if slackLog.Messages[i].Msg.User == e.UserID {
+        if e.Profile.DisplayName != "" {
+          messages.Msg[i].User = e.Profile.DisplayName
+        } else {
+          messages.Msg[i].User = e.Profile.RealName
+        }
+      }
+    }
     tmpUnixTime, _ := strconv.Atoi(slackLog.Messages[i].Msg.Timestamp)
     messages.Msg[i].Time = (time.Unix(int64(tmpUnixTime), 0)).String()
     fmt.Println(messages.Msg[i])
