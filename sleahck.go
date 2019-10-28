@@ -2,8 +2,8 @@ package main
 
 import (
     "github.com/nlopes/slack"
-//    "github.com/gin-gonic/gin"
-    "fmt"
+    "github.com/gin-gonic/gin"
+//    "fmt"
     "strconv"
     "time"
     "log"
@@ -58,27 +58,45 @@ type History struct {
   Msg []Message `json:"msg"`
 }
 
+type Histories struct {
+  history []History `json:"history"`
+}
+
 // }}}
 
 func main() {
-//  r := gin.Default()
+  r := gin.Default()
   channel := getChannels()
   users := getUserData()
-  var history []History
-  history = update(history, *channel, *users)
+  var histories Histories
+  histories = update(*channel, *users)
 
-  for {
-    t := time.Now()
-    if (t.Second() == 0) {
-      history = update(history, *channel, *users)
-      history = setSendData(history, *channel)
-      fmt.Println(history[0].ChannelName)
-      for _, e := range history[0].Msg {
-        fmt.Println(e)
+  sendChannelList(r, *channel)
+  sendHistory(r, histories)
+
+ go callUpdate(&histories, *channel, *users)
+ r.Run()
+}
+
+func sendChannelList(r *gin.Engine, channel Channels) {
+  r.GET("/sleahck/channelList", func(c *gin.Context) {
+      c.JSON(200, channel.Channels)
+      })
+}
+
+func sendHistory(r *gin.Engine, history Histories) {
+  r.GET("/sleahck/GetHistory/:cN", func(c *gin.Context) {
+
+      channel := c.Params.ByName("cN")
+      var sendIndex int
+      for i, e := range history.history {
+        if e.ChannelName == channel {
+          sendIndex = i
+          break
+        }
       }
-      fmt.Println("")
-    }
-  }
+      c.JSON(200, history.history[sendIndex])
+      })
 }
 
 // Get Channels Data --- {{{
@@ -148,7 +166,7 @@ func getUserData() *Users {
 //}}}
 
 // Channel History {{{
-func getHistory(channelID string, userData Users) *History {
+func getHistory(channelID string, userData Users) History {
   var messages History
   api := slack.New(os.Getenv("SLACK_TOKEN"))
 
@@ -174,35 +192,39 @@ func getHistory(channelID string, userData Users) *History {
     }
   }
 
-  return &messages
+  return messages
 }
 // }}}
 
-// set Send Data --- {{{
-func setSendData(msg []History, channels Channels) []History {
+// update --- {{{
+func update(channel Channels, users Users) Histories {
+  var histories Histories
+  for i, e := range channel.Channels {
+    tmp := getHistory(e.Id, users)
+    histories.history = append(histories.history, tmp)
+    histories.history[i].ChannelName = e.Name
+  }
 
-  for i, e := range msg {
-    for _, f := range channels.Channels {
-      if f.Id == e.ChannelID {
-        msg[i].ChannelName = f.Name
-        msg[i].Msg = e.Msg
-        msg[i].ChannelID = e.ChannelID
-        break
+  return histories
+}
+// }}}
+
+func callUpdate(histories *Histories, channel Channels, users Users) {
+  for {
+    t := time.Now()
+    if t.Second() == 0 {
+      tmp := update(channel, users)
+
+      for i, _ := range channel.Channels {
+        for j, f := range tmp.history[i].Msg {
+          (*histories).history[i].Msg[j].Text = f.Text
+          (*histories).history[i].Msg[j].Time = f.Time
+          (*histories).history[i].Msg[j].User = f.User
+        }
+
+        histories.history[i].ChannelName = channel.Channels[i].Name
+        histories.history[i].ChannelID = channel.Channels[i].Id
       }
     }
   }
-
-  return msg
 }
-//}}}
-
-// update --- {{{
-func update(history []History, channel Channels, users Users) []History {
-  history = []History{}
-  for _, e := range channel.Channels {
-    history = append(history, *(getHistory(e.Id, users)))
-  }
-
-  return history
-}
-// }}}
