@@ -61,16 +61,23 @@ type History struct {
 // }}}
 
 func main() {
+//  r := gin.Default()
   channel := getChannels()
   users := getUserData()
   var history []History
+  history = update(history, *channel, *users)
 
-  for _, e := range channel.Channels {
-    history = append(history, *(getHistory(e.Id, *users)))
-  }
-
-  for _, e := range history[0].Msg {
-    fmt.Println(e)
+  for {
+    t := time.Now()
+    if (t.Second() == 0) {
+      history = update(history, *channel, *users)
+      history = setSendData(history, *channel)
+      fmt.Println(history[0].ChannelName)
+      for _, e := range history[0].Msg {
+        fmt.Println(e)
+      }
+      fmt.Println("")
+    }
   }
 }
 
@@ -171,19 +178,31 @@ func getHistory(channelID string, userData Users) *History {
 }
 // }}}
 
-func setSendData(msg []History, channels Channels) *[]History {
-  var history []History
+// set Send Data --- {{{
+func setSendData(msg []History, channels Channels) []History {
 
   for i, e := range msg {
     for _, f := range channels.Channels {
       if f.Id == e.ChannelID {
-        history[i].ChannelName = f.Name
-        history[i].Msg = e.Msg
-        history[i].ChannelID = e.ChannelID
+        msg[i].ChannelName = f.Name
+        msg[i].Msg = e.Msg
+        msg[i].ChannelID = e.ChannelID
         break
       }
     }
   }
 
-  return &history
+  return msg
 }
+//}}}
+
+// update --- {{{
+func update(history []History, channel Channels, users Users) []History {
+  history = []History{}
+  for _, e := range channel.Channels {
+    history = append(history, *(getHistory(e.Id, users)))
+  }
+
+  return history
+}
+// }}}
