@@ -2,6 +2,7 @@ package main
 
 import (
     "github.com/nlopes/slack"
+//    "github.com/gin-gonic/gin"
     "fmt"
     "strconv"
     "time"
@@ -12,7 +13,6 @@ import (
     "encoding/json"
 //    "reflect"
     )
-
 
 // Data Struct --- {{{
 
@@ -52,15 +52,29 @@ type Message struct {
   Time string `json:"time"`
 }
 
-type Messages struct {
-  Msg [50]Message `json:"msg"`
+type History struct {
+  ChannelName string `json:"channeName"`
+  ChannelID string `json:"channelID"`
+  Msg []Message `json:"msg"`
 }
 
 // }}}
 
 func main() {
+  channel := getChannels()
+  users := getUserData()
+  var history []History
+
+  for _, e := range channel.Channels {
+    history = append(history, *(getHistory(e.Id, *users)))
+  }
+
+  for _, e := range history[0].Msg {
+    fmt.Println(e)
+  }
 }
 
+// Get Channels Data --- {{{
 func getChannels() *Channels {
   var channels Channels
 
@@ -91,13 +105,12 @@ func getChannels() *Channels {
     log.Println("error")
   }
 
-  for _, e := range channels.Channels {
-    fmt.Println(e)
-  }
-
   return &channels
 }
 
+// }}}
+
+// Get Users Data --- {{{
 func getUserData() *Users {
   var users Users
 
@@ -125,19 +138,23 @@ func getUserData() *Users {
 
   return &users
 }
+//}}}
 
-func getHistory(channelID string, userData Users) *Messages {
-  var messages Messages
+// Channel History {{{
+func getHistory(channelID string, userData Users) *History {
+  var messages History
   api := slack.New(os.Getenv("SLACK_TOKEN"))
 
   slackLog, err := api.GetChannelHistory(channelID, slack.HistoryParameters{"0", "0", 50, false, false})
+  messages.ChannelID = channelID
 
   if err != nil {
     log.Println("error")
   }
 
-  for i := 49; i >= 0; i-- {
-    messages.Msg[i].Text = slackLog.Messages[i].Msg.Text
+  for i := 0; i < len(slackLog.Messages); i++ {
+    tmpUnixTime, _ := strconv.Atoi(slackLog.Messages[i].Msg.Timestamp)
+    messages.Msg = append(messages.Msg, Message{slackLog.Messages[i].Msg.Text, "", (time.Unix(int64(tmpUnixTime), 0)).String()})
 
     for _, e := range userData.UserData {
       if slackLog.Messages[i].Msg.User == e.UserID {
@@ -148,10 +165,25 @@ func getHistory(channelID string, userData Users) *Messages {
         }
       }
     }
-    tmpUnixTime, _ := strconv.Atoi(slackLog.Messages[i].Msg.Timestamp)
-    messages.Msg[i].Time = (time.Unix(int64(tmpUnixTime), 0)).String()
-    fmt.Println(messages.Msg[i])
   }
 
   return &messages
+}
+// }}}
+
+func setSendData(msg []History, channels Channels) *[]History {
+  var history []History
+
+  for i, e := range msg {
+    for _, f := range channels.Channels {
+      if f.Id == e.ChannelID {
+        history[i].ChannelName = f.Name
+        history[i].Msg = e.Msg
+        history[i].ChannelID = e.ChannelID
+        break
+      }
+    }
+  }
+
+  return &history
 }
