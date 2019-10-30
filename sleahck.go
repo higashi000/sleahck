@@ -11,6 +11,7 @@ import (
     "net/http"
     "io/ioutil"
     "encoding/json"
+    "flag"
 //    "reflect"
     )
 
@@ -65,6 +66,14 @@ type Histories struct {
 // }}}
 
 func main() {
+  flag.Parse()
+  args := flag.Args()
+  var port string
+  if len(args) == 0 {
+    port = ":8080"
+  } else {
+    port = ":" + args[0]
+  }
   r := gin.Default()
   channel := getChannels()
   users := getUserData()
@@ -75,7 +84,7 @@ func main() {
   sendHistory(r, histories)
 
  go callUpdate(&histories, *channel, *users)
- r.Run()
+ r.Run(port)
 }
 
 func sendChannelList(r *gin.Engine, channel Channels) {
