@@ -15,6 +15,7 @@ go get -u github.com/higashi000/sleahck
 After, please edit your bashrc.<br>
 ```
 export PATH=$PATH:$GOPATH/bin/
+export SLACK_TOKEN="your slack token"
 sleahck &
 ```
 
