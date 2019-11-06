@@ -78,12 +78,12 @@ func main() {
   channel := getChannels()
   users := getUserData()
   var histories Histories
-  histories = update(*channel, *users)
+  histories = update(channel, users)
 
-  sendChannelList(r, *channel)
+  sendChannelList(r, channel)
   sendHistory(r, histories)
 
- go callUpdate(&histories, *channel, *users)
+ go callUpdate(&histories, &channel, &users)
  r.Run(port)
 }
 
@@ -109,7 +109,7 @@ func sendHistory(r *gin.Engine, history Histories) {
 }
 
 // Get Channels Data --- {{{
-func getChannels() *Channels {
+func getChannels() Channels {
   var channels Channels
 
   reqURL := "https://slack.com/api/users.conversations"
@@ -139,13 +139,13 @@ func getChannels() *Channels {
     log.Println("error")
   }
 
-  return &channels
+  return channels
 }
 
 // }}}
 
 // Get Users Data --- {{{
-func getUserData() *Users {
+func getUserData() Users {
   var users Users
 
   reqURL := "https://slack.com/api/users.list"
@@ -170,7 +170,7 @@ func getUserData() *Users {
     log.Println("error")
   }
 
-  return &users
+  return users
 }
 //}}}
 
@@ -187,7 +187,7 @@ func getHistory(channelID string, userData Users) History {
   }
 
   for i := 0; i < len(slackLog.Messages); i++ {
-    tmpUnixTime, _ := strconv.Atoi(slackLog.Messages[i].Msg.Timestamp)
+    tmpUnixTime, _ := strconv.Atoi(slackLog.Messages[i].Msg.Timestamp[0 : 10])
     messages.Msg = append(messages.Msg, Message{slackLog.Messages[i].Msg.Text, "", (time.Unix(int64(tmpUnixTime), 0)).String()})
 
     for _, e := range userData.UserData {
@@ -218,11 +218,11 @@ func update(channel Channels, users Users) Histories {
 }
 // }}}
 
-func callUpdate(histories *Histories, channel Channels, users Users) {
+func callUpdate(histories *Histories, channel *Channels, users *Users) {
   for {
     t := time.Now()
     if t.Second() == 0 {
-      tmp := update(channel, users)
+      tmp := update(*channel, *users)
 
       for i, _ := range channel.Channels {
         for j, f := range tmp.history[i].Msg {
@@ -231,8 +231,8 @@ func callUpdate(histories *Histories, channel Channels, users Users) {
           (*histories).history[i].Msg[j].User = f.User
         }
 
-        histories.history[i].ChannelName = channel.Channels[i].Name
-        histories.history[i].ChannelID = channel.Channels[i].Id
+        (*histories).history[i].ChannelName = channel.Channels[i].Name
+        (*histories).history[i].ChannelID = channel.Channels[i].Id
       }
     }
   }
