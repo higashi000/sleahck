@@ -51,6 +51,7 @@ type Message struct {
   Text string `json:"text"`
   User string `json:"user"`
   Time string `json:"time"`
+  TimeStamp string `json:"timestamp"`
 }
 
 type History struct {
@@ -188,7 +189,7 @@ func getHistory(channelID string, userData Users) History {
 
   for i := 0; i < len(slackLog.Messages); i++ {
     tmpUnixTime, _ := strconv.Atoi(slackLog.Messages[i].Msg.Timestamp[0 : 10])
-    messages.Msg = append(messages.Msg, Message{slackLog.Messages[i].Msg.Text, "", (time.Unix(int64(tmpUnixTime), 0)).String()})
+    messages.Msg = append(messages.Msg, Message{slackLog.Messages[i].Msg.Text, "", (time.Unix(int64(tmpUnixTime), 0)).String(), slackLog.Messages[i].Msg.Timestamp})
 
     for _, e := range userData.UserData {
       if slackLog.Messages[i].Msg.User == e.UserID {
@@ -229,6 +230,7 @@ func callUpdate(histories *Histories, channel *Channels, users *Users) {
           (*histories).history[i].Msg[j].Text = f.Text
           (*histories).history[i].Msg[j].Time = f.Time
           (*histories).history[i].Msg[j].User = f.User
+          (*histories).history[i].Msg[j].TimeStamp = f.TimeStamp
         }
 
         (*histories).history[i].ChannelName = channel.Channels[i].Name
