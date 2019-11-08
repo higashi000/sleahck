@@ -17,6 +17,11 @@ import (
 
 // Data Struct --- {{{
 
+type Emoji struct {
+  Name string `json:"name"`
+  ImgURL string `json:"imgurl"`
+}
+
 type Channels struct {
   Ok bool `json:"ok"`
   Channels []struct {
@@ -77,11 +82,13 @@ func main() {
   }
   r := gin.Default()
   channel := getChannels()
+  emoji := getEmojiList()
   users := getUserData()
   var histories Histories
   histories = update(channel, users)
 
   sendChannelList(r, channel)
+  sendEmojiList(r, emoji)
   sendHistory(r, histories)
 
  go callUpdate(&histories, &channel, &users)
@@ -91,6 +98,12 @@ func main() {
 func sendChannelList(r *gin.Engine, channel Channels) {
   r.GET("/sleahck/channelList", func(c *gin.Context) {
       c.JSON(200, channel.Channels)
+      })
+}
+
+func sendEmojiList(r *gin.Engine, emoji []Emoji) {
+  r.GET("/sleahck/emojiList", func(c *gin.Context) {
+      c.JSON(200, emoji)
       })
 }
 
@@ -216,6 +229,21 @@ func update(channel Channels, users Users) Histories {
   }
 
   return histories
+}
+// }}}
+
+// Emoji --- {{{
+func getEmojiList() []Emoji {
+  var emoji []Emoji
+  api := slack.New(os.Getenv("SLACK_TOKEN"))
+
+  emojiList, _ := api.GetEmoji()
+
+  for name, url := range emojiList {
+    emoji = append(emoji, Emoji{name, url})
+  }
+
+  return emoji
 }
 // }}}
 
