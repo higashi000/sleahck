@@ -3,6 +3,7 @@ package main
 import (
     "github.com/nlopes/slack"
     "github.com/gin-gonic/gin"
+    "github.com/higashi000/sleahck/sleahckSlack"
 //    "fmt"
     "strconv"
     "time"
@@ -11,7 +12,7 @@ import (
     "net/http"
     "io/ioutil"
     "encoding/json"
-    "flag"
+//    "flag"
 //    "reflect"
     )
 
@@ -72,27 +73,30 @@ type Histories struct {
 // }}}
 
 func main() {
-  flag.Parse()
-  args := flag.Args()
-  var port string
-  if len(args) == 0 {
-    port = ":8080"
-  } else {
-    port = ":" + args[0]
-  }
-  r := gin.Default()
-  channel := getChannels()
-  emoji := getEmojiList()
-  users := getUserData()
-  var histories Histories
-  histories = update(channel, users)
+//  flag.Parse()
+//  args := flag.Args()
+//  var port string
+//  if len(args) == 0 {
+//    port = ":8080"
+//  } else {
+//    port = ":" + args[0]
+//  }
+//  r := gin.Default()
+  channel := sleahckSlack.GetChannels()
 
-  sendChannelList(r, channel)
-  sendEmojiList(r, emoji)
-  sendHistory(r, histories)
+  log.Println(channel)
 
- go callUpdate(&histories, &channel, &users)
- r.Run(port)
+//  emoji := getEmojiList()
+//  users := getUserData()
+//  var histories Histories
+//  histories = update(channel, users)
+//
+//  sendChannelList(r, channel)
+//  sendEmojiList(r, emoji)
+//  sendHistory(r, histories)
+//
+//  go callUpdate(&histories, &channel, &users)
+// r.Run(port)
 }
 
 func sendChannelList(r *gin.Engine, channel Channels) {
