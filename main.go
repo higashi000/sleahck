@@ -126,42 +126,6 @@ func sendHistory(r *gin.Engine, history Histories) {
       })
 }
 
-// Get Channels Data --- {{{
-func getChannels() Channels {
-  var channels Channels
-
-  reqURL := "https://slack.com/api/users.conversations"
-
-  req, err := http.NewRequest("GET", reqURL, nil)
-  if err != nil {
-    log.Println("error")
-  }
-
-  req.Header.Add("Authorization", "Bearer " + os.Getenv("SLACK_TOKEN"))
-  req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-
-  client := &http.Client{}
-  resp, err := client.Do(req)
-  defer resp.Body.Close()
-  if err != nil {
-    log.Println("error")
-  }
-
-  body, err := ioutil.ReadAll(resp.Body)
-  if err != nil {
-    log.Println("error")
-  }
-
-  err = json.Unmarshal(body, &channels)
-  if err != nil {
-    log.Println("error")
-  }
-
-  return channels
-}
-
-// }}}
-
 // Get Users Data --- {{{
 func getUserData() Users {
   var users Users
